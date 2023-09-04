@@ -1,10 +1,37 @@
 def reward_function(params):
-    if params["all_wheels_on_track"] and params["steps"] > 0:
-        reward = ( ( params["progress"] / params["steps"] ) * 100 )**2 + ( params["speed"]**2 ) 
-    else:
-        reward = 0.01
+
+    speed_weight = 100
+    heading_weight = 100
+    steering_weight = 50
+
+    max_speed_reward = 10 * 10
+    min_speed_reward = 3.33 * 3.33
+    abs_speed_reward = params['speed'] * params['speed']
+    speed_reward = (abs_speed_reward - min_speed_reward) / (max_speed_reward - min_speed_reward) * speed_weight
+    
+    
+    if not params['all_wheels_on_track']:
+        return 1e-3
+    
+    
+    next_point = params['waypoints'][params['closest_waypoints'][1]]
+    prev_point = params['waypoints'][params['closest_waypoints'][0]]
+
+    track_direction = math.atan2(next_point[1] - prev_point[1], next_point[0] - prev_point[0]) 
+    track_direction = math.degrees(track_direction)
+
+    direction_diff = abs(track_direction - params['heading'])
+    if direction_diff > 180:
+        direction_diff = 360 - direction_diff
+    
+    abs_heading_reward = 1 - (direction_diff / 180.0)
+    heading_reward = abs_heading_reward * heading_weight
         
-    return float(reward)
+    abs_steering_reward = 1 - (abs(params['steering_angle'] - direction_diff) / 180.0)
+    steering_reward = abs_steering_reward * steering_weight
+
+    
+    return speed_reward + heading_reward + steering_reward
 
 
 """ 
